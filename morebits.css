@@ -8,7 +8,7 @@
  * The latest development source is available at [https://github.com/azatoth/twinkle/blob/master/morebits.css].
  */
 
-/* Status */
+/* Morebits.status */
 
 .tw_status_status {
 	color: #4682B4;
@@ -27,7 +27,7 @@
 	font-weight: bold;
 }
 
-/* Quickform */
+/* Morebits.quickForm */
 
 form.quickform
 {
@@ -73,7 +73,7 @@ form.quickform h5
 }
 
 /* only give the top border to headers with something above them */
-form.quickform div + h5, form.quickform div + div h5, form.quickform h5 + h5
+form.quickform div + h5, form.quickform div + div > h5, form.quickform h5 + h5
 {
 	border-top: 1px solid #88A;
 }
@@ -88,6 +88,12 @@ form.quickform textarea
 form.quickform span.quickformDescription
 {
 	font-style: italic;
+}
+
+form.quickform .quickformSubgroup
+{
+	margin-bottom: .5em;
+	margin-left: 3em;
 }
 
 form.quickform .tooltipButtonContainer
@@ -105,19 +111,71 @@ form.quickform .tooltipButton
 }
 
 
+/* Scrollbox styles, for use within Morebits.quickForm */
+
+div.quickform-scrollbox
+{
+	background: white;
+	border: 1px solid gray;
+	margin-bottom: .6em;
+	margin-top: .6em;
+	max-height: 20em;
+	overflow: auto;
+	padding: 6px 6px 0;
+}
+
+div.quickform-scrollbox h5:first-child
+{
+	border: none;
+	margin-top: 0;
+	padding-top: 0;
+}
+
+div.quickform-scrollbox :last-child
+{
+	margin-bottom: 6px;
+}
+
+
+/* Previewbox */
+
+div.morebits-previewbox
+{
+	background: white;
+	color: black;
+	border: 2px inset;
+	margin: .4em auto .2em;
+	padding: .2em .4em;
+}
+
+div.morebits-previewbox *:not(img)
+{
+	vertical-align: baseline;
+}
+
+div.morebits-previewbox .mw-editsection
+{
+	display: none;
+}
+
+
+
+
 /* Portlet */
 
-.skin-vector div div.extraMenu h5 span {
+.skin-vector div div.extraMenu h3 span {
 	background-position: 90% 50%;
 }
 
-.skin-vector div.extraMenu h5 a {
+.skin-vector div.extraMenu h3 a {
 	padding-left: .4em;
 	padding-right: .4em;
 	width: auto;
+	font-size: 0.78em;
+	padding-bottom: 0.5em;
 }
 
-.skin-vector div.extraMenu h5 a span {
+.skin-vector div.extraMenu h3 a span {
 	display: inline-block;
 	font-size: .8em;
 	height: 2.5em;
@@ -165,7 +223,7 @@ form.quickform .tooltipButton
 }
 
 
-/* SimpleWindow */
+/* Morebits.simpleWindow */
 
 .morebits-dialog {
 	border: 1px #666 solid;

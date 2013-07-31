@@ -1,25 +1,34 @@
+//<nowiki>
+
+
+(function($){
+
+
 /*
  ****************************************
  *** twinklebatchundelete.js: Batch undelete module
  ****************************************
  * Mode of invocation:     Tab ("Und-batch")
- * Active on:              Existing and non-existing user pages (??? why?)
+ * Active on:              Existing user pages
  * Config directives in:   TwinkleConfig
  */
 
 
 Twinkle.batchundelete = function twinklebatchundelete() {
-	if( wgNamespaceNumber != Namespace.USER ) {
+	if( mw.config.get("wgNamespaceNumber") !== mw.config.get("wgNamespaceIds").user || 
+		!mw.config.get("wgArticleId") ) {
 		return;
 	}
-	if( userIsInGroup( 'sysop' ) ) {
-		$(twAddPortletLink("#", "Und-batch", "tw-batch-undel", "Undelete 'em all", "")).click(Twinkle.batchundelete.callback);
+	if( Morebits.userIsInGroup( 'sysop' ) ) {
+		Twinkle.addPortletLink( Twinkle.batchundelete.callback, "Und-batch", "tw-batch-undel", "Undelete 'em all" );
 	}
 };
 
 Twinkle.batchundelete.callback = function twinklebatchundeleteCallback() {
-	var Window = new SimpleWindow( 800, 400 );
-	var form = new QuickForm( Twinkle.batchundelete.callback.evaluate );
+	var Window = new Morebits.simpleWindow( 800, 400 );
+	Window.setScriptName("Twinkle");
+	Window.setTitle("Batch undelete")
+	var form = new Morebits.quickForm( Twinkle.batchundelete.callback.evaluate );
 	form.append( {
 			type: 'textarea',
 			name: 'reason',
@@ -29,10 +38,10 @@ Twinkle.batchundelete.callback = function twinklebatchundeleteCallback() {
 	var query = {
 		'action': 'query',
 		'generator': 'links',
-		'titles': wgPageName,
+		'titles': mw.config.get("wgPageName"),
 		'gpllimit' : Twinkle.getPref('batchMax') // the max for sysops
 	};
-	var wikipedia_api = new Wikipedia.api( 'Grabbing pages', query, function( self ) {
+	var wikipedia_api = new Morebits.wiki.api( 'Grabbing pages', query, function( self ) {
 			var xmlDoc = self.responseXML;
 			var snapshot = xmlDoc.evaluate('//page[@missing]', xmlDoc, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null );
 			var list = [];
@@ -57,39 +66,41 @@ Twinkle.batchundelete.callback = function twinklebatchundeleteCallback() {
 	wikipedia_api.params = { form:form, Window:Window };
 	wikipedia_api.post();
 	var root = document.createElement( 'div' );
-	Status.init( root );
+	Morebits.status.init( root );
 	Window.setContent( root );
 	Window.display();
 };
 Twinkle.batchundelete.currentUndeleteCounter = 0;
 Twinkle.batchundelete.currentundeletor = 0;
 Twinkle.batchundelete.callback.evaluate = function( event ) {
-	Wikipedia.actionCompleted.notice = 'Status';
-	Wikipedia.actionCompleted.postfix = 'batch undeletion is now completed';
+	Morebits.wiki.actionCompleted.notice = 'Status';
+	Morebits.wiki.actionCompleted.postfix = 'batch undeletion is now completed';
 
 	var pages = event.target.getChecked( 'pages' );
 	var reason = event.target.reason.value;
 	if( ! reason ) {
+		alert("You need to give a reason, you cabal crony!");
 		return;
 	}
-	Status.init( event.target );
+	Morebits.simpleWindow.setButtonsEnabled(false);
+	Morebits.status.init( event.target );
 
 	if( !pages ) {
-		Status.error( 'Error', 'nothing to undelete, aborting' );
+		Morebits.status.error( 'Error', 'nothing to undelete, aborting' );
 		return;
 	}
 
-	var work = pages.chunk( Twinkle.getPref('batchUndeleteChunks') );
-	Wikipedia.addCheckpoint();
+	var work = Morebits.array.chunk( pages, Twinkle.getPref('batchUndeleteChunks') );
+	Morebits.wiki.addCheckpoint();
 	Twinkle.batchundelete.currentundeletor = window.setInterval( Twinkle.batchundelete.callbacks.main, 1000, work, reason );
 };
 
 Twinkle.batchundelete.callbacks = {
 	main: function( work, reason ) {
 		if( work.length === 0 && Twinkle.batchundelete.currentUndeleteCounter <= 0 ) {
-			Status.info( 'work done' );
+			Morebits.status.info( 'work done' );
 			window.clearInterval( Twinkle.batchundelete.currentundeletor );
-			Wikipedia.removeCheckpoint();
+			Morebits.wiki.removeCheckpoint();
 			return;
 		} else if( work.length !== 0 && Twinkle.batchundelete.currentUndeleteCounter <= Twinkle.getPref('batchUndeleteMinCutOff') ) {
 			var pages = work.shift();
@@ -97,34 +108,28 @@ Twinkle.batchundelete.callbacks = {
 			for( var i = 0; i < pages.length; ++i ) {
 				var title = pages[i];
 				var query = { 
-					'title': 'Special:Undelete',
-					'target': title,
-					'action': 'submit'
+					'token': mw.user.tokens.get().editToken,
+					'title': title,
+					'action': 'undelete',
+					'reason': reason + Twinkle.getPref('deletionSummaryAd')
 				};
-				var wikipedia_wiki = new Wikipedia.wiki( "Undeleting " + title, query, Twinkle.batchundelete.callbacks.undeletePage, function( self ) { 
+				var wikipedia_api = new Morebits.wiki.api( "Undeleting " + title, query, function( self ) { 
 						--Twinkle.batchundelete.currentUndeleteCounter;
 						var link = document.createElement( 'a' );
-						link.setAttribute( 'href', mw.util.wikiGetlink(self.params.title) );
-						link.setAttribute( 'title', self.params.title );
-						link.appendChild( document.createTextNode(self.params.title) );
+						link.setAttribute( 'href', mw.util.wikiGetlink(self.itsTitle) );
+						link.setAttribute( 'title', self.itsTitle );
+						link.appendChild( document.createTextNode(self.itsTitle) );
 						self.statelem.info( ['completed (',link,')'] );
 
 					});
-				wikipedia_wiki.params = { title:title, reason: reason };
-				wikipedia_wiki.get();
+				wikipedia_api.itsTitle = title;
+				wikipedia_api.post();
 
 			}
 		}
-	},
-	undeletePage: function( self ) {
-		var form = self.responseXML.getElementById('undelete');
-		var postData = {
-			'wpComment': self.params.reason + '.' +  Twinkle.getPref('deletionSummaryAd'),
-			'target': self.params.image,
-			'wpEditToken': form.wpEditToken.value,
-			'restore': 1
-		};
-		self.post( postData );
-
 	}
 };
+})(jQuery);
+
+
+//</nowiki>
